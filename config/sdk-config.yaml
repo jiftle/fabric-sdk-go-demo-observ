@@ -1,0 +1,144 @@
+name: "test-network"
+version: 1.0.0
+
+client:
+
+  # peer:
+  #   timeout:
+  #     connection: 30s
+  #     response: 180s
+  #     discovery:
+  #       greylistExpiry: 10s
+
+  organization: Org1
+  logging:
+    #level: debug
+    level: info
+
+
+  cryptoconfig:
+    path: ./config/cert
+
+  credentialStore:
+    path: /tmp/test-network/store
+
+    cryptoStore:
+      path: /tmp/test-network/msp 
+
+  BCCSP:
+    security:
+     enabled: true
+     default:
+      provider: "SW"
+     hashAlgorithm: "SHA2"
+     softVerify: true
+     level: 256
+
+  tlsCerts:
+    systemCertPool: false
+
+    # client:
+    #   key:
+    #     path:
+    #   cert:
+    #     path:
+
+channels:
+  mychannel:
+
+    peers:
+      peer0.org1.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+    policies:
+      queryChannelConfig:
+        minResponses: 1
+        maxTargets: 1
+        retryOpts:
+          attempts: 5
+          initialBackoff: 500ms
+          maxBackoff: 5s
+          backoffFactor: 2.0
+      discovery:
+        maxTargets: 2
+        retryOpts:
+          attempts: 4
+          initialBackoff: 500ms
+          maxBackoff: 5s
+          backoffFactor: 2.0
+      eventService:
+        resolverStrategy: PreferOrg
+        balancer: Random
+        blockHeightLagThreshold: 5
+        reconnectBlockHeightLagThreshold: 10
+        peerMonitorPeriod: 5s
+
+organizations:
+  Org1:
+    mspid: Org1MSP
+    cryptoPath: peerOrganizations/org1.example.com/users/{userName}@org1.example.com/msp
+    peers:
+      - peer0.org1.example.com
+    users:
+      Admin:
+        key:
+          path: ./config/cert/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/d8fab53a3389cdbcd4374d8b73bd818343f5e567922c4d399daa31fd9e4c797c_sk
+        cert: 
+          path: ./config/cert/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/cert.pem
+      User1:
+        key:
+          path: ./config/cert/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/keystore/f94bdc69f229bd0d269119bca7f5b6a621aa9639f527ca6bd156c2f66d0e14a9_sk
+        cert: 
+          path: ./config/cert/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/cert.pem
+
+
+
+orderers:
+  orderer.example.com:
+    url: grpcs://orderer.example.com:7050
+
+    grpcOptions:
+      ssl-target-name-override: orderer.example.com
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      allow-insecure: false
+
+    tlsCACerts:
+      path: ./config/cert/ordererOrganizations/example.com/msp/tlscacerts/tlsca.example.com-cert.pem 
+
+peers:
+  peer0.org1.example.com:
+    url: grpcs://localhost:7051
+    eventUrl: grpcs://peer0.org1.example.com:7053
+
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.example.com
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      allow-insecure: false
+
+    tlsCACerts:
+      path: ./config/cert/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+
+entityMatchers:
+  peer:
+    - pattern: (\w*)peer0.org1.example.com(\w*)
+      urlSubstitutionExp: grpcs://localhost:7051
+      eventUrlSubstitutionExp: grpcs://localhost:7053
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
+      mappedHost: peer0.org1.example.com
+
+  orderer:
+    - pattern: (.*)
+      urlSubstitutionExp: grpcs://orderer.example.com:7050
+      sslTargetOverrideUrlSubstitutionExp: orderer.example.com
+      mappedHost: orderer.example.com
+
+
